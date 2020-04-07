@@ -1,4 +1,4 @@
-"aws_availability_zones" "iac-azs" {
+data "aws_availability_zones" "iac-azs" {
     state = "available"
 }
 
@@ -22,18 +22,26 @@ resource "aws_internet_gateway" "da-wordpress-igw" {
   }
 }
 
-resource "aws_nat_gateway" "da-wordpress-nat" {
+resource "aws_nat_gateway" "da-wordpress-nat-a" {
   allocation_id           = "${aws_eip.da-wordpress-eip.id}"
-  subnet_ids  = ["${aws_subnet.public-wp-a.id}", "${aws_subnet.public-wp-b.id}"]
+  subnet_id               = aws_subnet.public-wp-a.id
   tags = {
-    Name = "devops-iac-nat"
+    Name = "da-wordpress-nat-a"
+  }
+}
+
+resource "aws_nat_gateway" "da-wordpress-nat-b" {
+  allocation_id           = "${aws_eip.da-wordpress-eip.id}"
+  subnet_id               =  aws_subnet.public-wp-b.id
+  tags = {
+    Name = "da-wordpress-nat-b"
   }
 }
 
 resource "aws_subnet" "private-wp-a" {
   vpc_id                  = "${aws_vpc.da-wordpress-vpc.id}"
   cidr_block              = "${var.private_subnet-wp-a}"
-  availability_zone       = "${data.aws_availability_zones.iac-azs.name[0]}"
+  availability_zone       = "${data.aws_availability_zones.iac-azs.names[0]}"
 
   tags = {
     Name = "private-subnet-a"
@@ -43,15 +51,17 @@ resource "aws_subnet" "private-wp-a" {
 resource "aws_subnet" "private-wp-b" {
   vpc_id                  = "${aws_vpc.da-wordpress-vpc.id}"
   cidr_block              = "${var.private_subnet-wp-b}"
-  availability_zone       = "${data.aws_availability_zones.iac-azs.name[1]}
+  availability_zone       = "${data.aws_availability_zones.iac-azs.names[1]}"
 
   tags = {
     Name = "private-subnet-b"
   }
+}
+
 resource "aws_subnet" "public-wp-a" {
   vpc_id                  = "${aws_vpc.da-wordpress-vpc.id}"
   cidr_block              = "${var.public_subnet-wp-a}"
-  availability_zone       = "${data.aws_availability_zones.iac-azs.name[2]}
+  availability_zone       = "${data.aws_availability_zones.iac-azs.names[2]}"
 
   tags = {
     Name = "public-subnet-a"
@@ -61,7 +71,7 @@ resource "aws_subnet" "public-wp-a" {
 resource "aws_subnet" "public-wp-b" {
   vpc_id                  = "${aws_vpc.da-wordpress-vpc.id}"
   cidr_block              = "${var.public_subnet-wp-b}"
-  availability_zone       = "${data.aws_availability_zones.iac-azs.name[3]}
+  availability_zone       = "${data.aws_availability_zones.iac-azs.names[0]}"
 
   tags = {
     Name = "public-subnet-b"
@@ -74,10 +84,6 @@ resource "aws_route_table" "public-access" {
   route {
       cidr_block = "0.0.0.0/0"
       gateway_id = "${aws_internet_gateway.da-wordpress-igw.id}"
-
-  tags = {
-      Name = "da-wordpress-igw"
-    }
   }
 }
 
@@ -89,22 +95,22 @@ resource "aws_default_route_table" "private-access" {
 }
 
 resource "aws_route_table_association" "public-access-a-rt" {
-  subnet_id      = "aws_subnet.public-wp-a"
+  subnet_id      = aws_subnet.public-wp-a.id
   route_table_id = "${aws_route_table.public-access.id}"
 }
 
 resource "aws_route_table_association" "public-access-b-rt" {
-  subnet_id      = "aws_subnet.public-wp-b"
+  subnet_id      = aws_subnet.public-wp-b.id
   route_table_id = "${aws_route_table.public-access.id}"
 }
 
 resource "aws_route_table_association" "private-access-a-rt" {
-  subnet_id      = "aws_subnet.private-wp-a"
+  subnet_id      = aws_subnet.private-wp-a.id
   route_table_id = "${aws_vpc.da-wordpress-vpc.default_route_table_id}"
 }
 
 resource "aws_route_table_association" "private-access-b-rt" {
-  subnet_id      = "aws_subnet.private-wp-b"
+  subnet_id      = aws_subnet.private-wp-b.id
   route_table_id = "${aws_vpc.da-wordpress-vpc.default_route_table_id}"
 }
 
