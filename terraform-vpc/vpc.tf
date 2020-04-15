@@ -18,25 +18,10 @@ resource "aws_eip" "da-wordpress-eip" {
 resource "aws_internet_gateway" "da-wordpress-igw" {
   vpc_id = "${aws_vpc.da-wordpress-vpc.id}"
   tags = {
-    Name ="terra-igw"
+    Name ="wp-igw"
   }
 }
 
-resource "aws_nat_gateway" "da-wordpress-nat-a" {
-  allocation_id           = "${aws_eip.da-wordpress-eip.id}"
-  subnet_id               = aws_subnet.public-wp-a.id
-  tags = {
-    Name = "da-wordpress-nat-a"
-  }
-}
-
-resource "aws_nat_gateway" "da-wordpress-nat-b" {
-  allocation_id           = "${aws_eip.da-wordpress-eip.id}"
-  subnet_id               =  aws_subnet.public-wp-b.id
-  tags = {
-    Name = "da-wordpress-nat-b"
-  }
-}
 
 resource "aws_subnet" "private-wp-a" {
   vpc_id                  = "${aws_vpc.da-wordpress-vpc.id}"
